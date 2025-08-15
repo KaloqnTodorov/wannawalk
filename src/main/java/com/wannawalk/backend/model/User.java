@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 
 @Data
 @Getter
@@ -34,6 +35,8 @@ public class User {
     private String dogName;
     private String breed;
     private Date birthday;
+    private List<String> personality; // New field
+    private String matchPreferences; // New field
 
     private boolean isVerified = false;
     private String confirmationToken;

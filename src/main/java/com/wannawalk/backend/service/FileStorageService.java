@@ -1,9 +1,15 @@
 package com.wannawalk.backend.service;
 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,54 +18,66 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(FileStorageService.class);
     private final Path fileStorageLocation;
 
     public FileStorageService() {
-        // Define the path to the upload directory.
-        // For production, this should be configured via application.properties.
         this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
-
         try {
-            // Create the directory if it doesn't exist.
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
             throw new RuntimeException("Could not create the directory where the uploaded files will be stored.", ex);
         }
     }
 
-    /**
-     * Stores a file on the local file system.
-     * @param file The file to store.
-     * @return The unique filename of the stored file.
-     */
     public String storeFile(MultipartFile file) {
-        // Normalize file name
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
-
         try {
-            // Check for invalid characters
             if (originalFileName.contains("..")) {
                 throw new RuntimeException("Sorry! Filename contains invalid path sequence " + originalFileName);
             }
-
-            // Create a unique filename to avoid conflicts
             String fileExtension = "";
             try {
                 fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
-            } catch(Exception e) {
-                // handle case where file has no extension
-            }
+            } catch(Exception e) {}
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
-
-
-            // Copy file to the target location (Replacing existing file with the same name)
             Path targetLocation = this.fileStorageLocation.resolve(uniqueFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
             return uniqueFileName;
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + originalFileName + ". Please try again!", ex);
+        }
+    }
+
+    public Resource loadFileAsResource(String fileName) {
+        try {
+            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists()) {
+                return resource;
+            } else {
+                throw new RuntimeException("File not found " + fileName);
+            }
+        } catch (MalformedURLException ex) {
+            throw new RuntimeException("File not found " + fileName, ex);
+        }
+    }
+
+    /**
+     * Deletes a file from the storage directory.
+     * @param fileName The name of the file to delete.
+     */
+    public void deleteFile(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
+        try {
+            Path filePath = this.fileStorageLocation.resolve(fileName).normalize();
+            Files.deleteIfExists(filePath);
+        } catch (IOException ex) {
+            // Log the error but don't throw an exception to the user
+            logger.error("Could not delete file: {}", fileName, ex);
         }
     }
 }
