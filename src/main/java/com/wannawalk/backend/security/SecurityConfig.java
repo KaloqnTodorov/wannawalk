@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll() // Allow public access to auth endpoints
                 .requestMatchers("/api/files/**").permitAll() // Allow public access to file uploads for now
                 .requestMatchers("/api/profile/**").authenticated() // Protect profile endpoints
+                .requestMatchers("/api/posts/**").authenticated() // Secure all post-related endpoints
                 .anyRequest().authenticated()
             );
         
