@@ -17,6 +17,8 @@ public class ProfileResponse {
     private String breed;
     private Date birthday;
     private String profilePicUrl;
-    private List<String> personality; // New field
-    private String matchPreferences; // New field
+    private List<String> personality;
+    private String matchPreferences;
+    // --- EDITED: Changed to a list of FriendResponse objects ---
+    private List<FriendResponse> friends; 
 }

@@ -8,7 +8,9 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Getter
@@ -37,6 +39,9 @@ public class User {
     private Date birthday;
     private List<String> personality; // New field
     private String matchPreferences; // New field
+
+       // --- NEW: Field to store IDs of friends ---
+    private Set<String> friends = new HashSet<>();
 
     private boolean isVerified = false;
     private String confirmationToken;
