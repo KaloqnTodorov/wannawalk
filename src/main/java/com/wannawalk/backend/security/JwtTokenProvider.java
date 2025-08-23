@@ -13,7 +13,6 @@ import com.wannawalk.backend.model.User;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
-import java.util.Base64;
 
 @Component
 public class JwtTokenProvider {
@@ -24,8 +23,7 @@ public class JwtTokenProvider {
     private final long jwtExpirationInMs;
 
     public JwtTokenProvider(@Value("${app.jwtSecret}") String jwtSecret, @Value("${app.jwtExpirationInMs}") long jwtExpirationInMs) {
-        byte[] keyBytes = Base64.getDecoder().decode(jwtSecret);
-        this.jwtSecretKey = Keys.hmacShaKeyFor(keyBytes);
+        this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes()); // Use raw bytes, no Base64 decoding
         this.jwtExpirationInMs = jwtExpirationInMs;
     }
 
@@ -33,12 +31,14 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
-        return Jwts.builder()
+        String token =  Jwts.builder()
                 .setSubject(user.getId())
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
                 .compact();
+                logger.info("generated token = " + token);
+                return token;
     }
 
     public String getUserIdFromJWT(String token) {
