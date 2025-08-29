@@ -5,9 +5,12 @@ import lombok.Data;
 @Data
 public class JwtAuthenticationResponse {
     private String accessToken;
+    private String refreshToken; // --- NEW ---
     private String tokenType = "Bearer";
 
-    public JwtAuthenticationResponse(String accessToken) {
+    // --- MODIFIED: Constructor now accepts both tokens ---
+    public JwtAuthenticationResponse(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
     }
 }

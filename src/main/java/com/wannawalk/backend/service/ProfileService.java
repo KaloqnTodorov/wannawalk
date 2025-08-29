@@ -1,5 +1,7 @@
 package com.wannawalk.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,11 +23,54 @@ import java.util.stream.Collectors;
 @Service
 public class ProfileService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ProfileService.class);
+
+
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    public void addFcmToken(String userEmail, String token) {
+        try {
+            logger.info("Adding FCM token for userEmail: {}", userEmail);
+            // --- FIX: Look up the user by email, not by ID ---
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+            
+            if (!user.getFcmTokens().contains(token)) {
+                user.getFcmTokens().add(token);
+                userRepository.save(user);
+                logger.info("Successfully added FCM token for userId: {}", user.getId());
+            } else {
+                logger.info("FCM token already exists for userId: {}", user.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error adding FCM token for userEmail: {}", userEmail, e);
+        }
+    }
+
+
+    // --- NEW: Method to remove an FCM token from a user's profile (for logout) ---
+    public void removeFcmToken(String userEmail, String token) {
+        try {
+            logger.info("Removing FCM token for userEmail: {}", userEmail);
+            // --- FIX: Look up the user by email, not by ID ---
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+            boolean removed = user.getFcmTokens().remove(token);
+            if (removed) {
+                userRepository.save(user);
+                logger.info("Successfully removed FCM token for userId: {}", user.getId());
+            } else {
+                logger.warn("Attempted to remove a non-existent FCM token for userId: {}", user.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error removing FCM token for userEmail: {}", userEmail, e);
+        }
+    }
 
     public ProfileResponse getUserProfile(String userId) {
         User user = findUserById(userId);
@@ -62,26 +107,24 @@ public class ProfileService {
         return newFileUrl;
     }
 
-    private User findUserById(String userId) {
+    public User findUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
 
     private ProfileResponse mapUserToProfileResponse(User user) {
-        // --- EDITED: Added logic to parse friend IDs from DBRef strings ---
         List<FriendResponse> friends = new ArrayList<>();
         if (user.getFriends() != null) {
             friends = user.getFriends().stream()
                 .map(friendIdString -> {
-                    // This regex extracts the 24-character hex ObjectId from the DBRef string
                     Pattern pattern = Pattern.compile("([a-f0-9]{24})");
                     Matcher matcher = pattern.matcher(friendIdString);
                     if (matcher.find()) {
                         return findUserById(matcher.group(1));
                     }
-                    return null; // Return null if no valid ID is found
+                    return null;
                 })
-                .filter(Objects::nonNull) // Remove any entries that couldn't be resolved
+                .filter(Objects::nonNull)
                 .map(friendUser -> new FriendResponse(
                     friendUser.getId(),
                     friendUser.getDogName(),

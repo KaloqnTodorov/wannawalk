@@ -16,7 +16,7 @@ import com.wannawalk.backend.service.AuthService;
 public class AuthController {
 
     @Autowired
-    private AuthService authService; // Inject the new service
+    private AuthService authService;
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
@@ -42,11 +42,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        
-            // Delegate the login logic and JWT generation to the service
-            String jwt = authService.loginUser(loginRequest);
-            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
-       
+    public ResponseEntity<JwtAuthenticationResponse> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        // --- MODIFIED: The service now returns the full response object ---
+        JwtAuthenticationResponse response = authService.loginUser(loginRequest);
+        return ResponseEntity.ok(response);
     }
 }

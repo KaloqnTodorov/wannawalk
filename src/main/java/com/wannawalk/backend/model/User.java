@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,8 @@ public class User {
 
        // --- NEW: Field to store IDs of friends ---
     private Set<String> friends = new HashSet<>();
+    // --- NEW: Add this field to store device tokens for push notifications ---
+    private List<String> fcmTokens = new ArrayList<>();
 
     private boolean isVerified = false;
     private String confirmationToken;

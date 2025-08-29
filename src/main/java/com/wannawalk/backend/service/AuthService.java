@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.wannawalk.backend.dto.JwtAuthenticationResponse; // --- NEW ---
 import com.wannawalk.backend.dto.LoginRequest;
 import com.wannawalk.backend.dto.SignUpRequest;
 import com.wannawalk.backend.model.User;
@@ -75,14 +76,10 @@ public class AuthService {
         if (user.getConfirmationTokenExpires().isBefore(Instant.now())) {
             throw new RuntimeException("Confirmation link has expired.");
         }
-
-        user.setVerified(true);
-        user.setConfirmationToken(null);
-        user.setConfirmationTokenExpires(null);
-        userRepository.save(user);
     }
 
-    public String loginUser(LoginRequest loginRequest) {
+    // --- MODIFIED: This method now returns the response object with both tokens ---
+    public JwtAuthenticationResponse loginUser(LoginRequest loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid credentials."));
 
@@ -94,6 +91,11 @@ public class AuthService {
             throw new RuntimeException("Invalid credentials.");
         }
 
-        return tokenProvider.generateToken(user);
+        // Generate both tokens
+        String accessToken = tokenProvider.generateToken(user);
+        String refreshToken = tokenProvider.generateRefreshToken(user);
+
+        // Return the response object
+        return new JwtAuthenticationResponse(accessToken, refreshToken);
     }
 }
