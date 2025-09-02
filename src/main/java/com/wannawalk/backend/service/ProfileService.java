@@ -35,7 +35,6 @@ public class ProfileService {
     public void addFcmToken(String userEmail, String token) {
         try {
             logger.info("Adding FCM token for userEmail: {}", userEmail);
-            // --- FIX: Look up the user by email, not by ID ---
             User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
             
@@ -51,12 +50,9 @@ public class ProfileService {
         }
     }
 
-
-    // --- NEW: Method to remove an FCM token from a user's profile (for logout) ---
     public void removeFcmToken(String userEmail, String token) {
         try {
             logger.info("Removing FCM token for userEmail: {}", userEmail);
-            // --- FIX: Look up the user by email, not by ID ---
             User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
 
@@ -111,6 +107,38 @@ public class ProfileService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
+    
+    /**
+     * Finds a user and returns a list of their friends as User objects.
+     * This is used by the WebSocket handler to know who to broadcast status updates to.
+     * @param userId The ID of the user whose friends we want to find.
+     * @return A list of friend User objects.
+     */
+    public List<User> findFriendsByUserId(String userId) {
+        User user = findUserById(userId);
+        if (user.getFriends() == null) {
+            return new ArrayList<>(); // Return an empty list if there are no friends
+        }
+
+        return user.getFriends().stream()
+            .map(friendIdString -> {
+                // This regex extracts the 24-character hexadecimal MongoDB ObjectId from the string
+                Pattern pattern = Pattern.compile("([a-f0-9]{24})");
+                Matcher matcher = pattern.matcher(friendIdString);
+                if (matcher.find()) {
+                    try {
+                        return findUserById(matcher.group(1));
+                    } catch (RuntimeException e) {
+                        // This can happen if a friend's account was deleted
+                        logger.warn("Could not find user for friend entry: {}", friendIdString);
+                        return null;
+                    }
+                }
+                return null;
+            })
+            .filter(Objects::nonNull) // Filter out any nulls in case a friend was not found
+            .collect(Collectors.toList());
+    }
 
     private ProfileResponse mapUserToProfileResponse(User user) {
         List<FriendResponse> friends = new ArrayList<>();
@@ -120,7 +148,12 @@ public class ProfileService {
                     Pattern pattern = Pattern.compile("([a-f0-9]{24})");
                     Matcher matcher = pattern.matcher(friendIdString);
                     if (matcher.find()) {
-                        return findUserById(matcher.group(1));
+                        try {
+                            return findUserById(matcher.group(1));
+                        } catch (RuntimeException e) {
+                            // This can happen if a friend's account was deleted
+                            return null;
+                        }
                     }
                     return null;
                 })
@@ -147,3 +180,4 @@ public class ProfileService {
         );
     }
 }
+
