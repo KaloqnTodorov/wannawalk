@@ -58,14 +58,14 @@ public class DeviceController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/auth/refresh-token")
-    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
-        // Your logic to validate the refresh token and issue a new access token
-        if (tokenProvider.validateRefreshToken(request.refreshToken)) {
-            String newAccessToken = tokenProvider.createAccessTokenFromRefreshToken(request.refreshToken);
-            return ResponseEntity.ok(new AuthResponse(newAccessToken));
-        } else {
-            return ResponseEntity.status(401).body("Invalid Refresh Token");
-        }
-    }
+//    @PostMapping("/auth/refresh-token")
+//    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+//        // Your logic to validate the refresh token and issue a new access token
+//        if (tokenProvider.validateRefreshToken(request.refreshToken)) {
+//            String newAccessToken = tokenProvider.createAccessTokenFromRefreshToken(request.refreshToken);
+//            return ResponseEntity.ok(new AuthResponse(newAccessToken));
+//        } else {
+//            return ResponseEntity.status(401).body("Invalid Refresh Token");
+//        }
+//    }
 }
