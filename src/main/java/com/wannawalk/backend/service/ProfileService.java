@@ -70,7 +70,12 @@ public class ProfileService {
 
     public ProfileResponse getUserProfile(String userId) {
         User user = findUserById(userId);
-        return mapUserToProfileResponse(user);
+        return mapUserToProfileResponse(user, true); // true for private profile
+    }
+
+    public ProfileResponse getPublicUserProfile(String userId) {
+        User user = findUserById(userId);
+        return mapUserToProfileResponse(user, false); // false for public profile
     }
 
     public ProfileResponse updateUserProfile(String userId, ProfileUpdateRequest updateRequest) {
@@ -80,7 +85,7 @@ public class ProfileService {
         user.setMatchPreferences(updateRequest.getMatchPreferences());
 
         User updatedUser = userRepository.save(user);
-        return mapUserToProfileResponse(updatedUser);
+        return mapUserToProfileResponse(updatedUser, true);
     }
 
     public String updateUserProfilePicture(String userId, MultipartFile file) {
@@ -140,9 +145,9 @@ public class ProfileService {
             .collect(Collectors.toList());
     }
 
-    private ProfileResponse mapUserToProfileResponse(User user) {
+    private ProfileResponse mapUserToProfileResponse(User user, boolean isPrivate) {
         List<FriendResponse> friends = new ArrayList<>();
-        if (user.getFriends() != null) {
+        if (isPrivate && user.getFriends() != null) {
             friends = user.getFriends().stream()
                 .map(friendIdString -> {
                     Pattern pattern = Pattern.compile("([a-f0-9]{24})");
@@ -167,16 +172,16 @@ public class ProfileService {
         }
 
         return new ProfileResponse(
-            user.getId(),
-            user.getYourName(),
-            user.getDogName(),
-            user.getEmail(),
-            user.getBreed(),
-            user.getBirthday(),
-            user.getProfilePicUrl(),
-            user.getPersonality(),
-            user.getMatchPreferences(),
-            friends 
+                user.getId(),
+                isPrivate ? user.getYourName() : null, // Only show owner's name on private view
+                user.getDogName(),
+                isPrivate ? user.getEmail() : null, // Only show email on private view
+                user.getBreed(),
+                user.getBirthday(),
+                user.getProfilePicUrl(),
+                user.getPersonality(),
+                user.getMatchPreferences(),
+                friends // Friends list will be empty for public profiles
         );
     }
 }

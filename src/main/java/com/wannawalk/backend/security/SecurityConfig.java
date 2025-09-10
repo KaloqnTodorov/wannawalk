@@ -33,7 +33,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/files/**").permitAll() // Allow public access to file uploads for now
                 .requestMatchers("/api/profile/**").authenticated() // Protect profile endpoints
                 .requestMatchers("/api/posts/**").authenticated() // Secure all post-related endpoints
-                .requestMatchers("/chat/**").permitAll() // ✅ ALLOW WebSocket upgrades
+                .requestMatchers("/api/users/*/profile").authenticated() // Secure the public user profile endpoint
+                .requestMatchers("/chat/**").permitAll() // ALLOW WebSocket upgrades
                 .anyRequest().authenticated()
             );
         

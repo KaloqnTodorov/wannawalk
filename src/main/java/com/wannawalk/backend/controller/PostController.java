@@ -35,6 +35,12 @@ public class PostController {
         return ResponseEntity.ok(posts);
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<PostResponse>> getPostsByUserId(@PathVariable String userId) {
+        List<PostResponse> posts = postService.getPostsForUser(userId);
+        return ResponseEntity.ok(posts);
+    }
+
     @PostMapping("/{postId}/like")
     public ResponseEntity<?> toggleLike(@AuthenticationPrincipal UserPrincipal currentUser, @PathVariable String postId) {
         boolean isLiked = postService.toggleLike(currentUser.getId(), postId);
