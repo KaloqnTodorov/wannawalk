@@ -29,6 +29,19 @@ public class PostController {
         return ResponseEntity.ok(newPost);
     }
 
+    @GetMapping("/feed")
+    public ResponseEntity<List<PostResponse>> getFeed(@AuthenticationPrincipal UserPrincipal currentUser) {
+        List<PostResponse> feed = postService.getFeedForUser(currentUser.getId());
+        return ResponseEntity.ok(feed);
+    }
+
+    // --- NEW: Endpoint to get a single post by its ID ---
+    @GetMapping("/{postId}")
+    public ResponseEntity<PostResponse> getPostById(@PathVariable String postId) {
+        PostResponse post = postService.getPostById(postId);
+        return ResponseEntity.ok(post);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<List<PostResponse>> getMyPosts(@AuthenticationPrincipal UserPrincipal currentUser) {
         List<PostResponse> posts = postService.getPostsForUser(currentUser.getId());
@@ -65,3 +78,4 @@ public class PostController {
         }
     }
 }
+

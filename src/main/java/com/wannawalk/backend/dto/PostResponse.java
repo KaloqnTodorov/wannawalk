@@ -11,6 +11,7 @@ import com.wannawalk.backend.model.Comment;
 @Data
 public class PostResponse {
     private String id;
+    private String authorId; // Added author's ID for frontend navigation
     private String authorUsername;
     private String authorProfilePicUrl;
     private String description;

@@ -9,10 +9,18 @@ import com.wannawalk.backend.model.User;
 import com.wannawalk.backend.repository.CommentRepository;
 import com.wannawalk.backend.repository.PostRepository;
 import com.wannawalk.backend.repository.UserRepository;
+
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,12 +51,49 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    public List<PostResponse> getFeedForUser(String userId) {
+        User currentUser = findUserById(userId);
+        List<String> userIds = new ArrayList<>();
+        userIds.add(currentUser.getId());
+
+        if (currentUser.getFriends() != null) {
+            Pattern pattern = Pattern.compile("([a-f0-9]{24})");
+            currentUser.getFriends().forEach(friendIdString -> {
+                Matcher matcher = pattern.matcher(friendIdString);
+                if (matcher.find()) {
+                    userIds.add(matcher.group(1));
+                }
+            });
+        }
+
+        // TODO: This is inefficient. Refactor to make a single database call to fetch all posts.
+        List<Post> allPosts = new ArrayList<>();
+        for (String id : userIds) {
+            allPosts.addAll(postRepository.findByAuthorIdOrderByCreatedAtDesc(id));
+        }
+
+        allPosts.sort(Comparator.comparing(Post::getCreatedAt).reversed());
+
+        return allPosts.stream()
+                .map(this::mapPostToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // --- NEW: Service method to get a single post ---
+    public PostResponse getPostById(String postId) {
+        Post post = findPostById(postId);
+        return mapPostToResponse(post);
+    }
+
     public boolean toggleLike(String userId, String postId) {
         User user = findUserById(userId);
         Post post = findPostById(postId);
         boolean isLiked;
-        if (post.getLikes().contains(user)) {
-            post.getLikes().remove(user);
+        // Check if the user is already in the likes list
+        boolean userExists = post.getLikes().stream().anyMatch(u -> u.getId().equals(userId));
+
+        if (userExists) {
+            post.getLikes().removeIf(u -> u.getId().equals(userId));
             isLiked = false;
         } else {
             post.getLikes().add(user);
@@ -72,17 +117,14 @@ public class PostService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("Comment not found with id: " + commentId));
 
-        // Authorization check: Ensure the user deleting the comment is its author
         if (!Objects.equals(comment.getAuthor().getId(), userId)) {
             throw new SecurityException("User is not authorized to delete this comment.");
         }
 
-        // Remove the comment reference from the post
         Post post = findPostById(postId);
         post.getComments().removeIf(c -> c.getId().equals(commentId));
         postRepository.save(post);
 
-        // Delete the comment itself
         commentRepository.delete(comment);
     }
 
@@ -99,15 +141,25 @@ public class PostService {
     private PostResponse mapPostToResponse(Post post) {
         PostResponse response = new PostResponse();
         response.setId(post.getId());
-        response.setAuthorUsername(post.getAuthor().getUsername());
+        response.setAuthorId(post.getAuthor().getId());
+        response.setAuthorUsername(post.getAuthor().getDogName());
         response.setAuthorProfilePicUrl(post.getAuthor().getProfilePicUrl());
         response.setDescription(post.getDescription());
         response.setImageUrl(post.getImageUrl());
         response.setLocation(post.getLocation());
-        response.setTaggedFriends(post.getTaggedFriends());
+
+        if (post.getTaggedFriends() != null) {
+            response.setTaggedFriends(new ArrayList<>(post.getTaggedFriends()));
+        }
+
         response.setLikes(post.getLikes().stream().map(User::getId).collect(Collectors.toSet()));
         response.setComments(post.getComments());
-        response.setCreatedAt(post.getCreatedAt());
+
+        if (post.getCreatedAt() != null) {
+            response.setCreatedAt(post.getCreatedAt());
+        }
+
         return response;
     }
 }
+
