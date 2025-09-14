@@ -26,18 +26,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**").permitAll() // Allow public access to auth endpoints
-                .requestMatchers("/api/files/**").permitAll() // Allow public access to file uploads for now
-                .requestMatchers("/api/profile/**").authenticated() // Protect profile endpoints
-                .requestMatchers("/api/posts/**").authenticated() // Secure all post-related endpoints
-                .requestMatchers("/api/users/*/profile").authenticated() // Secure the public user profile endpoint
-                .requestMatchers("/chat/**").permitAll() // ALLOW WebSocket upgrades
-                .anyRequest().authenticated()
-            );
-        
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/api/auth/**").permitAll() // Allow public access to auth endpoints
+                        .requestMatchers("/api/files/**").permitAll() // Allow public access to file uploads for now
+                        .requestMatchers("/api/profile/**").authenticated() // Protect profile endpoints
+                        .requestMatchers("/api/posts/**").authenticated() // Secure all post-related endpoints
+                        .requestMatchers("/api/users/*/profile").authenticated() // Secure the public user profile endpoint
+                        .requestMatchers("/api/matching/**").authenticated() // Secure all matching-related endpoints
+                        .requestMatchers("/chat/**").permitAll() // ALLOW WebSocket upgrades
+                        .anyRequest().authenticated()
+                );
+
         // Add our custom JWT security filter
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
