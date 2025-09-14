@@ -1,6 +1,7 @@
 package com.wannawalk.backend.controller;
 
 
+import com.wannawalk.backend.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,6 +45,21 @@ public class ProfileController {
         return ResponseEntity.ok(updatedProfile);
     }
 
+    /**
+     * --- NEW ENDPOINT ---
+     * Handles updating the user's saved match filter preferences.
+     * @param currentUser The authenticated user principal.
+     * @param filtersRequest The new filter settings.
+     * @return A response entity indicating success.
+     */
+    @PutMapping("/me/filters")
+    public ResponseEntity<Void> updateMatchFilters(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestBody User.MatchFilters filtersRequest) {
+        profileService.updateMatchFilters(currentUser.getId(), filtersRequest);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/me/picture")
     public ResponseEntity<?> updateCurrentUserProfilePicture(
             @AuthenticationPrincipal UserPrincipal currentUser,
@@ -56,4 +72,3 @@ public class ProfileController {
         }
     }
 }
-

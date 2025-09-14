@@ -1,5 +1,6 @@
 package com.wannawalk.backend.service;
 
+import com.wannawalk.backend.model.User.MatchFilters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ public class ProfileService {
             logger.info("Adding FCM token for userEmail: {}", userEmail);
             User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
-            
+
             if (!user.getFcmTokens().contains(token)) {
                 user.getFcmTokens().add(token);
                 userRepository.save(user);
@@ -88,6 +89,26 @@ public class ProfileService {
         return mapUserToProfileResponse(updatedUser, true);
     }
 
+    /**
+     * --- NEW METHOD ---
+     * Updates the user's saved match filter preferences.
+     * @param userId The ID of the user to update.
+     * @param filtersRequest The DTO containing the new filter settings.
+     */
+    public void updateMatchFilters(String userId, MatchFilters filtersRequest) {
+        User user = findUserById(userId);
+
+        MatchFilters matchFilters = new MatchFilters();
+        matchFilters.setRadius(filtersRequest.getRadius());
+        matchFilters.setBreeds(filtersRequest.getBreeds());
+        matchFilters.setMinAge(filtersRequest.getMinAge());
+        matchFilters.setMaxAge(filtersRequest.getMaxAge());
+        matchFilters.setPersonality(filtersRequest.getPersonality());
+
+        user.setMatchFilters(matchFilters);
+        userRepository.save(user);
+    }
+
     public String updateUserProfilePicture(String userId, MultipartFile file) {
         User user = findUserById(userId);
 
@@ -112,7 +133,7 @@ public class ProfileService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
     }
-    
+
     /**
      * Finds a user and returns a list of their friends as User objects.
      * This is used by the WebSocket handler to know who to broadcast status updates to.
@@ -126,30 +147,8 @@ public class ProfileService {
         }
 
         return user.getFriends().stream()
-            .map(friendIdString -> {
-                // This regex extracts the 24-character hexadecimal MongoDB ObjectId from the string
-                Pattern pattern = Pattern.compile("([a-f0-9]{24})");
-                Matcher matcher = pattern.matcher(friendIdString);
-                if (matcher.find()) {
-                    try {
-                        return findUserById(matcher.group(1));
-                    } catch (RuntimeException e) {
-                        // This can happen if a friend's account was deleted
-                        logger.warn("Could not find user for friend entry: {}", friendIdString);
-                        return null;
-                    }
-                }
-                return null;
-            })
-            .filter(Objects::nonNull) // Filter out any nulls in case a friend was not found
-            .collect(Collectors.toList());
-    }
-
-    private ProfileResponse mapUserToProfileResponse(User user, boolean isPrivate) {
-        List<FriendResponse> friends = new ArrayList<>();
-        if (isPrivate && user.getFriends() != null) {
-            friends = user.getFriends().stream()
                 .map(friendIdString -> {
+                    // This regex extracts the 24-character hexadecimal MongoDB ObjectId from the string
                     Pattern pattern = Pattern.compile("([a-f0-9]{24})");
                     Matcher matcher = pattern.matcher(friendIdString);
                     if (matcher.find()) {
@@ -157,18 +156,40 @@ public class ProfileService {
                             return findUserById(matcher.group(1));
                         } catch (RuntimeException e) {
                             // This can happen if a friend's account was deleted
+                            logger.warn("Could not find user for friend entry: {}", friendIdString);
                             return null;
                         }
                     }
                     return null;
                 })
-                .filter(Objects::nonNull)
-                .map(friendUser -> new FriendResponse(
-                    friendUser.getId(),
-                    friendUser.getDogName(),
-                    friendUser.getProfilePicUrl()
-                ))
+                .filter(Objects::nonNull) // Filter out any nulls in case a friend was not found
                 .collect(Collectors.toList());
+    }
+
+    private ProfileResponse mapUserToProfileResponse(User user, boolean isPrivate) {
+        List<FriendResponse> friends = new ArrayList<>();
+        if (isPrivate && user.getFriends() != null) {
+            friends = user.getFriends().stream()
+                    .map(friendIdString -> {
+                        Pattern pattern = Pattern.compile("([a-f0-9]{24})");
+                        Matcher matcher = pattern.matcher(friendIdString);
+                        if (matcher.find()) {
+                            try {
+                                return findUserById(matcher.group(1));
+                            } catch (RuntimeException e) {
+                                // This can happen if a friend's account was deleted
+                                return null;
+                            }
+                        }
+                        return null;
+                    })
+                    .filter(Objects::nonNull)
+                    .map(friendUser -> new FriendResponse(
+                            friendUser.getId(),
+                            friendUser.getDogName(),
+                            friendUser.getProfilePicUrl()
+                    ))
+                    .collect(Collectors.toList());
         }
 
         return new ProfileResponse(
@@ -181,8 +202,8 @@ public class ProfileService {
                 user.getProfilePicUrl(),
                 user.getPersonality(),
                 user.getMatchPreferences(),
-                friends // Friends list will be empty for public profiles
+                friends, // Friends list will be empty for public profiles
+                isPrivate ? user.getMatchFilters() : null // Add match filters for private view
         );
     }
 }
-

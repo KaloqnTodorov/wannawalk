@@ -1,5 +1,6 @@
 package com.wannawalk.backend.dto;
 
+import com.wannawalk.backend.model.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,5 +21,6 @@ public class ProfileResponse {
     private List<String> personality;
     private String matchPreferences;
     // --- EDITED: Changed to a list of FriendResponse objects ---
-    private List<FriendResponse> friends; 
+    private List<FriendResponse> friends;
+    private User.MatchFilters matchFilters; // Field for returning saved filters
 }

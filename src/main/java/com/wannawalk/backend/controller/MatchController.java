@@ -35,14 +35,20 @@ public class MatchController {
     }
 
     /**
-     * Retrieves a list of potential matches for the currently authenticated user.
+     * --- EDITED ---
+     * Retrieves a list of potential matches for the currently authenticated user,
+     * applying all specified filters.
      */
-    @GetMapping("/matches") // Removed userId from path
+    @GetMapping("/matches")
     public ResponseEntity<List<UserDto>> getMatches(
-            @AuthenticationPrincipal UserPrincipal currentUser, // Get user from security context
-            @RequestParam(defaultValue = "10") double radius) {
-        // Fetch matches for the currently authenticated user
-        List<UserDto> matches = matchService.getMatches(currentUser.getId(), radius);
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestParam(defaultValue = "20") double radius,
+            @RequestParam(required = false) Integer minAge,
+            @RequestParam(required = false) Integer maxAge,
+            @RequestParam(required = false) List<String> breeds,
+            @RequestParam(required = false) List<String> personality) {
+        // Fetch matches for the currently authenticated user with all filters
+        List<UserDto> matches = matchService.getMatches(currentUser.getId(), radius, minAge, maxAge, breeds, personality);
         return ResponseEntity.ok(matches);
     }
 

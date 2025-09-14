@@ -38,13 +38,14 @@ public class User {
     private String dogName;
     private String breed;
     private Date birthday;
-    private List<String> personality; // New field
-    private String matchPreferences; // New field
+    private List<String> personality;
+    private String matchPreferences;
 
-       // --- NEW: Field to store IDs of friends ---
     private Set<String> friends = new HashSet<>();
-    // --- NEW: Add this field to store device tokens for push notifications ---
     private List<String> fcmTokens = new ArrayList<>();
+
+    // --- NEW: Field to store user's match filter preferences ---
+    private MatchFilters matchFilters;
 
     private boolean isVerified = false;
     private String confirmationToken;
@@ -59,5 +60,16 @@ public class User {
         this.dogName = dogName;
         this.breed = breed;
         this.birthday = birthday;
+    }
+
+    // --- NEW: Nested class for storing filter preferences ---
+    @Data
+    @NoArgsConstructor
+    public static class MatchFilters {
+        private Integer radius;
+        private List<String> breeds;
+        private Integer minAge;
+        private Integer maxAge;
+        private List<String> personality;
     }
 }
