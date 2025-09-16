@@ -1,3 +1,5 @@
+// src/main/java/com/wannawalk/backend/security/JwtTokenProvider.java
+
 package com.wannawalk.backend.security;
 
 import io.jsonwebtoken.*;
@@ -18,15 +20,14 @@ public class JwtTokenProvider {
 
     private final SecretKey jwtSecretKey;
     private final long jwtExpirationInMs;
-    // --- NEW: Added expiration for the refresh token ---
     private final long jwtRefreshExpirationInMs;
 
     public JwtTokenProvider(@Value("${app.jwtSecret}") String jwtSecret,
                             @Value("${app.jwtExpirationInMs}") long jwtExpirationInMs,
-                            @Value("${app.jwtRefreshExpirationInMs}") long jwtRefreshExpirationInMs) { // --- NEW ---
+                            @Value("${app.jwtRefreshExpirationInMs}") long jwtRefreshExpirationInMs) {
         this.jwtSecretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         this.jwtExpirationInMs = jwtExpirationInMs;
-        this.jwtRefreshExpirationInMs = jwtRefreshExpirationInMs; // --- NEW ---
+        this.jwtRefreshExpirationInMs = jwtRefreshExpirationInMs;
     }
 
     // This generates the short-lived accessToken
@@ -42,7 +43,20 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // --- NEW: Method to generate the long-lived refreshToken ---
+    // --- NEW: Method to generate a token with a custom expiration for the QR Code ---
+    public String generateTokenWithUserId(String userId, long expirationInMillis) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expirationInMillis);
+
+        return Jwts.builder()
+                .setSubject(userId)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(jwtSecretKey, SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    // This generates the long-lived refreshToken
     public String generateRefreshToken(User user) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationInMs);
@@ -55,7 +69,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-
+    // --- RENAMED: Changed to getUserIdFromToken for consistency with controller ---
     public String getUserIdFromJWT(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(jwtSecretKey)
