@@ -148,17 +148,16 @@ public class MatchService {
 
                 if (userA_Opt.isPresent() && userB_Opt.isPresent()) {
                     User userA = userA_Opt.get(); // The user who just swiped
-                    User userB = userB_Opt.get(); // The user who was swiped upon
 
-                    notificationService.sendNotification(
+                    // Use the new notification service method
+                    notificationService.sendMatchNotification(
                             swipedUserId,
                             userId,
-                            userA.getDogName(),
-                            "You have a new match with " + userA.getDogName() + "!"
+                            userA.getDogName()
                     );
 
                     response.put("isMatch", true);
-                    response.put("message", "It's a match with " + userB.getDogName() + "!");
+                    response.put("message", "It's a match with " + userB_Opt.get().getDogName() + "!");
                 } else {
                     response.put("isMatch", true);
                     response.put("message", "It's a match!");

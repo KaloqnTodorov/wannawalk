@@ -130,8 +130,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (!recipientWatchingThisChat) {
             User sender = profileService.findUserById(senderId);
             String senderName = (sender != null) ? sender.getDogName() : "Someone";
-            String body = chatMessage.getMessage();
-            notificationService.sendNotification(recipientId, senderId, senderName, body);
+
+            // Use the new notification service method
+            notificationService.sendChatMessageNotification(recipientId, senderId, senderName, chatMessage.getMessage());
         }
     }
 

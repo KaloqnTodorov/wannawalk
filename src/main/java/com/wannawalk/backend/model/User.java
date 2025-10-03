@@ -47,6 +47,9 @@ public class User {
     // --- NEW: Field to store user's match filter preferences ---
     private MatchFilters matchFilters;
 
+    // --- NEW: Field to store user's notification settings ---
+    private NotificationSettings notificationSettings;
+
     private boolean isVerified = false;
     private String confirmationToken;
     private Instant confirmationTokenExpires;

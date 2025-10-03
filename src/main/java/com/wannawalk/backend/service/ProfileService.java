@@ -1,5 +1,8 @@
 package com.wannawalk.backend.service;
 
+import com.wannawalk.backend.dto.NotificationSettingsDto;
+import com.wannawalk.backend.model.NotificationSettings;
+import com.wannawalk.backend.model.User;
 import com.wannawalk.backend.model.User.MatchFilters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +14,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.wannawalk.backend.dto.FriendResponse;
 import com.wannawalk.backend.dto.ProfileResponse;
 import com.wannawalk.backend.dto.ProfileUpdateRequest;
-import com.wannawalk.backend.model.User;
 import com.wannawalk.backend.repository.UserRepository;
 
 import java.util.ArrayList;
@@ -91,6 +93,46 @@ public class ProfileService {
 
     /**
      * --- NEW METHOD ---
+     * Retrieves notification settings for a given user.
+     * @param userId The ID of the user.
+     * @return A DTO with the user's notification settings.
+     */
+    public NotificationSettingsDto getNotificationSettings(String userId) {
+        User user = findUserById(userId);
+        NotificationSettings settings = user.getNotificationSettings();
+        // If user has no settings saved, return a new object with default values
+        if (settings == null) {
+            settings = new NotificationSettings();
+        }
+
+        NotificationSettingsDto dto = new NotificationSettingsDto();
+        dto.setNewMatches(settings.isNewMatches());
+        dto.setMessages(settings.isMessages());
+        dto.setFeedActivity(settings.isFeedActivity());
+        return dto;
+    }
+
+    /**
+     * --- NEW METHOD ---
+     * Updates notification settings for a given user.
+     * @param userId The ID of the user.
+     * @param settingsDto The DTO containing the new settings.
+     */
+    public void updateNotificationSettings(String userId, NotificationSettingsDto settingsDto) {
+        User user = findUserById(userId);
+        NotificationSettings settings = user.getNotificationSettings();
+        if (settings == null) {
+            settings = new NotificationSettings();
+        }
+        settings.setNewMatches(settingsDto.isNewMatches());
+        settings.setMessages(settingsDto.isMessages());
+        settings.setFeedActivity(settingsDto.isFeedActivity());
+        user.setNotificationSettings(settings);
+        userRepository.save(user);
+    }
+
+
+    /**
      * Updates the user's saved match filter preferences.
      * @param userId The ID of the user to update.
      * @param filtersRequest The DTO containing the new filter settings.

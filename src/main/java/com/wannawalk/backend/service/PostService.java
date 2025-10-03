@@ -32,6 +32,9 @@ public class PostService {
     private UserRepository userRepository;
     @Autowired
     private CommentRepository commentRepository;
+    @Autowired
+    private NotificationService notificationService;
+
 
     public PostResponse createPost(String userId, PostRequest postRequest) {
         User author = findUserById(userId);
@@ -89,7 +92,7 @@ public class PostService {
         User user = findUserById(userId);
         Post post = findPostById(postId);
         boolean isLiked;
-        // Check if the user is already in the likes list
+
         boolean userExists = post.getLikes().stream().anyMatch(u -> u.getId().equals(userId));
 
         if (userExists) {
@@ -98,6 +101,15 @@ public class PostService {
         } else {
             post.getLikes().add(user);
             isLiked = true;
+
+            // Notify post author if someone else liked the post
+            if (!post.getAuthor().getId().equals(userId)) {
+                notificationService.sendPostLikeNotification(
+                        post.getAuthor().getId(),
+                        userId,
+                        user.getDogName()
+                );
+            }
         }
         postRepository.save(post);
         return isLiked;
@@ -110,6 +122,17 @@ public class PostService {
         Comment savedComment = commentRepository.save(comment);
         post.getComments().add(savedComment);
         postRepository.save(post);
+
+        // Notify post author if someone else commented
+        if (!post.getAuthor().getId().equals(userId)) {
+            notificationService.sendPostCommentNotification(
+                    post.getAuthor().getId(),
+                    userId,
+                    author.getDogName(),
+                    commentRequest.getText()
+            );
+        }
+
         return savedComment;
     }
 
@@ -162,4 +185,3 @@ public class PostService {
         return response;
     }
 }
-
