@@ -2,6 +2,7 @@
 
 package com.wannawalk.backend.service;
 
+import com.wannawalk.backend.config.ChatWebSocketHandler;
 import com.wannawalk.backend.errors.FriendServiceException;
 import com.wannawalk.backend.security.JwtTokenProvider; // --- NEW: Hypothetical token provider ---
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.wannawalk.backend.model.User;
 import com.wannawalk.backend.repository.UserRepository;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -20,6 +22,9 @@ public class FriendService {
     // --- NEW: Inject the token provider for validation ---
     @Autowired
     private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private ChatWebSocketHandler webSocketHandler;
 
     /**
      * --- NEW: Adds a friend using a token from a QR code. ---
@@ -70,6 +75,12 @@ public class FriendService {
 
         userRepository.save(currentUser);
         userRepository.save(friendUser);
+
+        Map<String, Object> payloadForUnfriendedUser = Map.of(
+                "event", "friend_removed",
+                "userId", currentUserId // The user who initiated the action
+        );
+        webSocketHandler.sendEventToUser(friendId, payloadForUnfriendedUser);
     }
 
     private User findUserById(String userId) {

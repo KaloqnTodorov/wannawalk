@@ -166,6 +166,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         s.sendMessage(new TextMessage(mapper.writeValueAsString(obj)));
     }
 
+    public void sendEventToUser(String userId, Map<String, Object> payload) {
+        try {
+            // Re-uses your existing private method
+            sendJson(userId, payload);
+        } catch (IOException e) {
+            logger.error("Failed to send event to user {}: {}", userId, e.getMessage());
+        }
+    }
+
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
