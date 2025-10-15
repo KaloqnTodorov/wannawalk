@@ -43,14 +43,14 @@ public class AuthService {
 
         // Create new user's account with all the new fields
         User user = new User(
-            signUpRequest.getUsername(),
-            signUpRequest.getYourName(),
-            signUpRequest.getEmail(),
-            passwordEncoder.encode(signUpRequest.getPassword()),
-            signUpRequest.getProfilePicUrl(),
-            signUpRequest.getDogName(),
-            signUpRequest.getBreed(),
-            signUpRequest.getBirthday()
+                signUpRequest.getUsername(),
+                signUpRequest.getYourName(),
+                signUpRequest.getEmail(),
+                passwordEncoder.encode(signUpRequest.getPassword()),
+                signUpRequest.getProfilePicUrl(),
+                signUpRequest.getDogName(),
+                signUpRequest.getBreed(),
+                signUpRequest.getBirthday()
         );
 
         String token = UUID.randomUUID().toString();
@@ -61,10 +61,10 @@ public class AuthService {
 
         String confirmationUrl = appUrl + "/api/auth/confirm/" + token;
         String emailContent = "<div style='font-family: Arial, sans-serif; text-align: center; padding: 20px;'>"
-                            + "<h2>Welcome to the App!</h2>"
-                            + "<p>Click the button below to confirm your email address.</p>"
-                            + "<a href='" + confirmationUrl + "' style='background-color: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px;'>Confirm Email</a>"
-                            + "</div>";
+                + "<h2>Welcome to the App!</h2>"
+                + "<p>Click the button below to confirm your email address.</p>"
+                + "<a href='" + confirmationUrl + "' style='background-color: #007bff; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px;'>Confirm Email</a>"
+                + "</div>";
 
         emailService.sendConfirmationEmail(user.getEmail(), "Confirm Your Email Address", emailContent);
     }
@@ -97,5 +97,28 @@ public class AuthService {
 
         // Return the response object
         return new JwtAuthenticationResponse(accessToken, refreshToken);
+    }
+
+    // --- NEW METHOD ---
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with this email."));
+
+        // Generate a random 8-character temporary password
+        String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+
+        // Update the user's password
+        user.setPassword(passwordEncoder.encode(temporaryPassword));
+        userRepository.save(user);
+
+        // Send the temporary password via email
+        String emailContent = "<div style='font-family: Arial, sans-serif; padding: 20px;'>"
+                + "<h2>Password Reset</h2>"
+                + "<p>You have requested to reset your password. Your temporary password is:</p>"
+                + "<p style='font-size: 24px; font-weight: bold; letter-spacing: 2px; background-color: #f0f0f0; padding: 10px; border-radius: 5px; display: inline-block;'>" + temporaryPassword + "</p>"
+                + "<p>Please log in with this temporary password and change it immediately from your profile settings.</p>"
+                + "</div>";
+
+        emailService.sendPasswordResetEmail(user.getEmail(), "Your Temporary Password", emailContent);
     }
 }

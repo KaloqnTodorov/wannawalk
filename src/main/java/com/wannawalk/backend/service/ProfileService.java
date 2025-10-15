@@ -7,6 +7,7 @@ import com.wannawalk.backend.model.User.MatchFilters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -34,6 +35,10 @@ public class ProfileService {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    // --- NEW: Inject PasswordEncoder for changing passwords ---
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public void addFcmToken(String userEmail, String token) {
         try {
@@ -148,6 +153,27 @@ public class ProfileService {
         matchFilters.setPersonality(filtersRequest.getPersonality());
 
         user.setMatchFilters(matchFilters);
+        userRepository.save(user);
+    }
+
+    // --- NEW METHOD ---
+    public void changePassword(String userEmail, String oldPassword, String newPassword) {
+        // Find user by email, as email is the principal name from UserDetails
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + userEmail));
+
+        // Verify the old password
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Incorrect old password.");
+        }
+
+        // Add basic password validation
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new RuntimeException("New password must be at least 8 characters long.");
+        }
+
+        // Encode and set the new password
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
 
